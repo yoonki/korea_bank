@@ -86,30 +86,51 @@ if apikey:
             group_col = 'KEYSTAT_NAME'
             x_col = 'CLASS_NAME'
 
-        # 2개 선택 시 좌/우 Y축 혼합 그래프
+        # 2개 선택 시 좌/우 Y축 혼합 그래프 (KEYSTAT_NAME 기준일 때 Y축 개수 옵션 추가)
         if plot_type == '한 그래프에 그룹(혼합)' and len(selected_options) == 2:
             opt1, opt2 = selected_options
             subdf1 = df1[df1[group_col] == opt1]
             subdf2 = df1[df1[group_col] == opt2]
             fig = go.Figure()
+
+            # Y축 개수 옵션: 1개(좌측만) 또는 2개(좌/우)
+            yaxis_count = '1개(좌측만)'
+            if select_basis == 'KEYSTAT_NAME':
+                yaxis_count = st.radio('Y축 개수 선택', ['1개(좌측만)', '2개(좌/우)'], horizontal=True)
+
             # 첫 번째 (좌측 Y축)
             if class_graph_types[opt1] == '막대그래프':
                 fig.add_trace(go.Bar(x=subdf1[x_col], y=subdf1['DATA_VALUE'], name=opt1, text=subdf1['DATA_VALUE'], yaxis='y1'))
             else:
                 fig.add_trace(go.Scatter(x=subdf1[x_col], y=subdf1['DATA_VALUE'], name=opt1, mode='lines+markers', text=subdf1['DATA_VALUE'], yaxis='y1'))
-            # 두 번째 (우측 Y축)
-            if class_graph_types[opt2] == '막대그래프':
-                fig.add_trace(go.Bar(x=subdf2[x_col], y=subdf2['DATA_VALUE'], name=opt2, text=subdf2['DATA_VALUE'], yaxis='y2', marker_color='#EF553B'))
+            # 두 번째 (Y축 분기)
+            if yaxis_count == '2개(좌/우)':
+                if class_graph_types[opt2] == '막대그래프':
+                    fig.add_trace(go.Bar(x=subdf2[x_col], y=subdf2['DATA_VALUE'], name=opt2, text=subdf2['DATA_VALUE'], yaxis='y2', marker_color='#EF553B'))
+                else:
+                    fig.add_trace(go.Scatter(x=subdf2[x_col], y=subdf2['DATA_VALUE'], name=opt2, mode='lines+markers', text=subdf2['DATA_VALUE'], yaxis='y2', line=dict(color='#EF553B')))
+                fig.update_layout(
+                    title=f"{select_basis} 2개 혼합(좌/우 Y축)",
+                    yaxis=dict(title=opt1, type='log' if scale_type=='로그 스케일' else 'linear'),
+                    yaxis2=dict(title=opt2, overlaying='y', side='right', type='log' if scale_type=='로그 스케일' else 'linear'),
+                    xaxis=dict(title=x_col),
+                    legend=dict(x=0.01, y=0.99)
+                )
             else:
-                fig.add_trace(go.Scatter(x=subdf2[x_col], y=subdf2['DATA_VALUE'], name=opt2, mode='lines+markers', text=subdf2['DATA_VALUE'], yaxis='y2', line=dict(color='#EF553B')))
-            fig.update_layout(
-                title=f"{select_basis} 2개 혼합(좌/우 Y축)",
-                yaxis=dict(title=opt1, type='log' if scale_type=='로그 스케일' else 'linear'),
-                yaxis2=dict(title=opt2, overlaying='y', side='right', type='log' if scale_type=='로그 스케일' else 'linear'),
-                xaxis=dict(title=x_col),
-                legend=dict(x=0.01, y=0.99)
-            )
+                if class_graph_types[opt2] == '막대그래프':
+                    fig.add_trace(go.Bar(x=subdf2[x_col], y=subdf2['DATA_VALUE'], name=opt2, text=subdf2['DATA_VALUE']))
+                else:
+                    fig.add_trace(go.Scatter(x=subdf2[x_col], y=subdf2['DATA_VALUE'], name=opt2, mode='lines+markers', text=subdf2['DATA_VALUE']))
+                fig.update_layout(
+                    title=f"{select_basis} 2개 혼합(좌측 Y축)",
+                    yaxis=dict(type='log' if scale_type=='로그 스케일' else 'linear'),
+                    xaxis=dict(title=x_col),
+                    legend=dict(x=0.01, y=0.99)
+                )
             st.plotly_chart(fig)
+            # --- 그래프 아래에 필터링된 데이터 표 추가 ---
+            st.markdown('#### 선택한 데이터 상세')
+            st.dataframe(df1[df1[group_col].isin(selected_options)])
         elif plot_type == '한 그래프에 그룹(혼합)':
             fig = go.Figure()
             for opt in selected_options:
@@ -122,6 +143,8 @@ if apikey:
             if scale_type == '로그 스케일':
                 fig.update_yaxes(type='log')
             st.plotly_chart(fig)
+            st.markdown('#### 선택한 데이터 상세')
+            st.dataframe(df1[df1[group_col].isin(selected_options)])
         else:
             # subplot(분할) 그래프
             fig = make_subplots(rows=len(selected_options), cols=1, shared_xaxes=True, subplot_titles=selected_options)
@@ -135,6 +158,8 @@ if apikey:
             if scale_type == '로그 스케일':
                 fig.update_yaxes(type='log')
             st.plotly_chart(fig)
+            st.markdown('#### 선택한 데이터 상세')
+            st.dataframe(df1[df1[group_col].isin(selected_options)])
     else:
         # 필수 컬럼이 없을 때 경고 메시지
         st.warning('CLASS_NAME, KEYSTAT_NAME, DATA_VALUE 컬럼이 데이터에 없습니다.')
