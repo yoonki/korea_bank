@@ -86,7 +86,7 @@ if apikey:
             group_col = 'KEYSTAT_NAME'
             x_col = 'CLASS_NAME'
 
-        # 2개 선택 시 좌/우 Y축 혼합 그래프 (KEYSTAT_NAME 기준일 때 Y축 개수 옵션 추가)
+        # 2개 선택 시 좌/우 Y축 혼합 그래프 (분류 기준별로 Y축 개수 옵션)
         if plot_type == '한 그래프에 그룹(혼합)' and len(selected_options) == 2:
             opt1, opt2 = selected_options
             subdf1 = df1[df1[group_col] == opt1]
@@ -95,7 +95,7 @@ if apikey:
 
             # Y축 개수 옵션: 1개(좌측만) 또는 2개(좌/우)
             yaxis_count = '1개(좌측만)'
-            if select_basis == 'KEYSTAT_NAME':
+            if select_basis in ['KEYSTAT_NAME', 'CLASS_NAME']:
                 yaxis_count = st.radio('Y축 개수 선택', ['1개(좌측만)', '2개(좌/우)'], horizontal=True)
 
             # 첫 번째 (좌측 Y축)
